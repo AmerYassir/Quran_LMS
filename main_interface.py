@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 import sqlite3
+from datetime import datetime
 
 class QuranLMSApp:
     def __init__(self, master):
@@ -36,48 +37,54 @@ class QuranLMSApp:
         self.create_button("Show Student Progress", self.show_student_progress)
         self.create_button("Show Student Achievements", self.show_student_achievements)
         self.create_button("Show Student Sessions", self.show_student_sessions)
-
+        #self.create_button("Refresh",self.refresh_database)
         # Create a button to retrieve and display student progress
         
         
 
     def create_tables(self):
         self.c.execute("""CREATE TABLE IF NOT EXISTS students (
-            id INTEGER PRIMARY KEY,
-            name TEXT NOT NULL,
+            
+            name TEXT PRIMARY KEY,
             age INTEGER NOT NULL,
             level TEXT NOT NULL
         )""")
 
         self.c.execute("""CREATE TABLE IF NOT EXISTS progress (
             id INTEGER PRIMARY KEY,
-            student_id INTEGER NOT NULL,
+            student_name Text NOT NULL,
             surah TEXT NOT NULL,
             ayat_start INTEGER NOT NULL,
             ayat_end INTEGER NOT NULL,
             date TEXT NOT NULL,
-            FOREIGN KEY (student_id) REFERENCES students(id)
+            FOREIGN KEY (student_name) REFERENCES students(name)
         )""")
 
         self.c.execute("""CREATE TABLE IF NOT EXISTS achievements (
             id INTEGER PRIMARY KEY,
-            student_id INTEGER NOT NULL,
+            student_name Text NOT NULL,
             achievement TEXT NOT NULL,
             date TEXT NOT NULL,
-            FOREIGN KEY (student_id) REFERENCES students(id)
+            FOREIGN KEY (student_name) REFERENCES students(name)
         )""")
 
         self.c.execute("""CREATE TABLE IF NOT EXISTS sessions (
             id INTEGER PRIMARY KEY,
-            student_id INTEGER NOT NULL,
+            student_name Text NOT NULL,
             date TEXT NOT NULL,
             duration INTEGER NOT NULL,
             notes TEXT,
-            FOREIGN KEY (student_id) REFERENCES students(id)
+            FOREIGN KEY (student_name) REFERENCES students(name)
         )""")
 
         self.conn.commit()
-
+    def refresh_database(self):
+        self.conn.close()
+        self.conn = sqlite3.connect('quran_lms.db')
+        self.c = self.conn.cursor()
+        print(self.retrieve_kid_names())
+        
+        print("Refreshing database...")
     def create_button(self, text, command):
         button = ttk.Button(self.button_frame, text=text, command=command)
         button.pack(side=tk.LEFT, padx=5, pady=5)
@@ -99,7 +106,10 @@ class QuranLMSApp:
         # Create a button to delete selected rows from the progress table
         
         # Optionally, update the displayed progress
-        self.retrieve_student_progress()
+        if self.kid_combobox.get()== "" or self.kid_combobox.get()=="Select Kid":
+            self.retrieve_student_progress()
+        else:
+            self.retrieve_student_progress(self.kid_combobox.get())
 
     def show_student_achievements(self):
         # Show the student_achievements_frame and hide others
@@ -117,8 +127,6 @@ class QuranLMSApp:
         self.student_progress_frame.pack_forget()
         self.student_achievements_frame.pack_forget()
         self.student_sessions_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-
-        
 
     def create_student_info_frame(self):
         #region student info frame
@@ -151,6 +159,32 @@ class QuranLMSApp:
         
         #endregion student info frame
 
+    def add_progress(self):
+        # Retrieve values from entry fields
+        surah = self.progress_surah_entry.get()
+        ayat_start = self.progress_ayat_start_entry.get()
+        ayat_end = self.progress_ayat_end_entry.get()
+        date=str(datetime.today().date())
+        name=self.kid_combobox.get()
+        print(name)
+        
+        # Check if all fields are filled
+        if not all([surah, ayat_start, ayat_end]):
+            # Display an error message or handle the case where not all fields are filled
+            # For simplicity, we print an error message to the console
+            print("Please fill in all fields.")
+            return
+
+        # Insert the new student into the 'students' table
+        self.c.execute("INSERT INTO progress (student_name,surah, ayat_start, ayat_end,date) VALUES (?, ?, ?,?,?)", (name,surah, ayat_start, ayat_end,date))
+        self.conn.commit()
+
+        # Clear the entry fields
+        self.progress_surah_entry.delete(0, tk.END)
+        self.progress_ayat_start_entry.delete(0, tk.END)
+        self.progress_ayat_end_entry.delete(0, tk.END)
+        
+
     def add_student(self):
         # Retrieve values from entry fields
         student_name = self.student_name_entry.get()
@@ -173,6 +207,9 @@ class QuranLMSApp:
         self.student_age_entry.delete(0, tk.END)
         self.student_level_entry.delete(0, tk.END)
 
+        current_values = self.kid_combobox['values']
+        updated_values = current_values + (student_name,)
+        self.kid_combobox['values'] = updated_values
         # Optionally, update the display or perform other actions
         # For example, you might want to refresh the displayed list of students
         # You can call a function similar to retrieve_student_progress here
@@ -184,21 +221,49 @@ class QuranLMSApp:
         self.student_progress_frame = ttk.Frame(self.master)
         self.student_progress_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
-        self.delete_progress_button = ttk.Button(self.student_progress_frame, text="Delete Progress", command=self.delete_selected_progress)
-        self.retrieve_progress_button = ttk.Button(self.student_progress_frame, text="Retrieve Progress", command=self.retrieve_student_progress)
-        self.retrieve_progress_button.pack(side=tk.TOP, padx=5, pady=5)
-        self.delete_progress_button.pack(side=tk.TOP, padx=5, pady=5)
+        self.student_progress_entry_frame=ttk.Frame(self.student_progress_frame)
+        self.student_progress_entry_frame.pack(side=tk.TOP)
+
+        self.delete_progress_button = ttk.Button(self.student_progress_entry_frame, text="Delete Progress", command=self.delete_selected_progress)
+        self.add_progress_button = ttk.Button(self.student_progress_entry_frame, text="add Progress", command=self.add_progress)
+
+        self.delete_progress_button.pack(side=tk.LEFT, padx=5, pady=5)
+        self.add_progress_button.pack(side=tk.LEFT, padx=5, pady=5)
         # Create a treeview to display student progress
-        self.student_progress_treeview = ttk.Treeview(self.student_progress_frame, columns=("Surah", "Ayat Start", "Ayat End", "Date"))
+        self.student_progress_treeview = ttk.Treeview(self.student_progress_frame, columns=("std_ID","Surah", "Ayat Start", "Ayat End", "Date"))
         self.student_progress_treeview.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         # Set column headings
-        self.student_progress_treeview.heading("#0", text="ID")  # The default ID column
-        #self.student_progress_treeview.heading("ID", text="ID")
+        self.student_progress_treeview.heading("#0", text="index")  # The default ID column
+        self.student_progress_treeview.heading("std_ID", text="std_ID")
         self.student_progress_treeview.heading("Surah", text="Surah")
         self.student_progress_treeview.heading("Ayat Start", text="Ayat Start")
         self.student_progress_treeview.heading("Ayat End", text="Ayat End")
         self.student_progress_treeview.heading("Date", text="Date")
+
+        #region entry frame
+        
+        self.progress_surah_label = ttk.Label(self.student_progress_entry_frame, text="surah:")
+        self.progress_surah_label.pack(side=tk.LEFT, padx=5, pady=5)
+
+        self.progress_surah_entry = ttk.Entry(self.student_progress_entry_frame)
+        self.progress_surah_entry.pack(side=tk.LEFT, padx=5, pady=5)
+
+        self.progress_ayat_start_label = ttk.Label(self.student_progress_entry_frame, text="ayat start:")
+        self.progress_ayat_start_label.pack(side=tk.LEFT, padx=5, pady=5)
+
+        self.progress_ayat_start_entry = ttk.Entry(self.student_progress_entry_frame)
+        self.progress_ayat_start_entry.pack(side=tk.LEFT, padx=5, pady=5)
+
+        self.progress_ayat_end_label = ttk.Label(self.student_progress_entry_frame, text="ayat end:")
+        self.progress_ayat_end_label.pack(side=tk.LEFT, padx=5, pady=5)
+
+        self.progress_ayat_end_entry = ttk.Entry(self.student_progress_entry_frame)
+        self.progress_ayat_end_entry.pack(side=tk.LEFT, padx=5, pady=5)
+
+        
+        #endregion
+    
     def create_student_achievements_frame(self):
         self.student_achievements_frame = ttk.Frame(self.master)
         self.student_achievements_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
@@ -206,33 +271,34 @@ class QuranLMSApp:
         # Create a treeview to display student achievements
         self.student_achievements_treeview = ttk.Treeview(self.student_achievements_frame, columns=("Achievement", "Date"))
         self.student_achievements_treeview.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
     def create_student_sessions_frame(self):
         self.student_sessions_frame = ttk.Frame(self.master)
         self.student_sessions_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
         # Create a treeview to display student sessions
         # self.student_sessions_treeview = ttk.Treeview(self.student_sessions_frame, columns=("...
-
     def retrieve_kid_names(self):
         self.c.execute("SELECT name FROM students")
         students_data = self.c.fetchall()
         return students_data
-    def retrieve_student_progress(self):
-        # Retrieve and display student progress data
-
+    def retrieve_student_progress(self,name=""):
         # Clear existing items in the treeview
         for item in self.student_progress_treeview.get_children():
             self.student_progress_treeview.delete(item)
+        if name !="":
+            self.c.execute("SELECT * FROM progress where student_name=?",(name,))
+            progress_data = self.c.fetchall()
+        else:    
+            # Retrieve data from the 'progress' table
+            self.c.execute("SELECT * FROM progress")
+            progress_data = self.c.fetchall()
 
-        # Retrieve data from the 'progress' table
-        self.c.execute("SELECT * FROM progress")
-        progress_data = self.c.fetchall()
-
-        print(progress_data)
+        #progress_data=list(progress_data[0])[1:]
         # Display data in the treeview
         for row in progress_data:
-            self.student_progress_treeview.insert("", "end", values=row)
+            row=list(row)
+            
+            self.student_progress_treeview.insert("", "end", values=row[1:])
 
     def delete_selected_progress(self):
         # Delete selected rows from the 'progress' table
@@ -251,10 +317,10 @@ class QuranLMSApp:
             values = self.student_progress_treeview.item(item, 'values')
 
             # Extract the relevant information (assuming 'id' is the first column)
-            progress_id = values[0]
+            progress_name = values[0]
 
             # Delete the row from the 'progress' table
-            self.c.execute("DELETE FROM progress WHERE id=?", (progress_id,))
+            self.c.execute("DELETE FROM progress WHERE student_name=?", (progress_name,))
             self.conn.commit()
 
             # Remove the item from the treeview
