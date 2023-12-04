@@ -2,6 +2,9 @@ from datetime import datetime
 from general_frame import GeneralFrame
 import tkinter as tk
 from tkinter import ttk
+from tkinter import messagebox
+
+
 class StudentProgressFrame(GeneralFrame):
 
     def __init__(self, master,config):
@@ -15,8 +18,8 @@ class StudentProgressFrame(GeneralFrame):
         self.student_progress_entry_frame=ttk.Frame(self)
         self.student_progress_entry_frame.pack(side=tk.TOP)
 
-        self.delete_progress_button = ttk.Button(self.student_progress_entry_frame, text="Delete Progress", command=self.delete_item)
-        self.add_progress_button = ttk.Button(self.student_progress_entry_frame, text="add Progress", command=self.add_item)
+        self.delete_progress_button = ttk.Button(self.student_progress_entry_frame, text="مسح عنصر", command=self.delete_item)
+        self.add_progress_button = ttk.Button(self.student_progress_entry_frame, text="اضافة عنصر", command=self.add_item)
 
         self.delete_progress_button.pack(side=tk.LEFT, padx=5, pady=5)
         self.add_progress_button.pack(side=tk.LEFT, padx=5, pady=5)
@@ -25,32 +28,32 @@ class StudentProgressFrame(GeneralFrame):
         self.student_progress_treeview.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         # Set column headings
-        self.student_progress_treeview.heading("#0", text="index")  # The default ID column
-        self.student_progress_treeview.heading("std_ID", text="std_ID")
-        self.student_progress_treeview.heading("Surah", text="Surah")
-        self.student_progress_treeview.heading("Ayat Start", text="Ayat Start")
-        self.student_progress_treeview.heading("Ayat End", text="Ayat End")
-        self.student_progress_treeview.heading("Date", text="Date")
-
+        self.student_progress_treeview.heading("#0", text="رقم")  # The default ID column
+        self.student_progress_treeview.heading("std_ID", text="اسم الطالب")
+        self.student_progress_treeview.heading("Surah", text="السورة")
+        self.student_progress_treeview.heading("Ayat Start", text="اية البدأ")
+        self.student_progress_treeview.heading("Ayat End", text="اية الانتهاء")
+        self.student_progress_treeview.heading("Date", text="التاريخ")
+        self.student_progress_treeview.column('#0', minwidth = 0, width = 0, stretch = True)
         
         
-        self.progress_surah_label = ttk.Label(self.student_progress_entry_frame, text="surah:")
-        self.progress_surah_label.pack(side=tk.LEFT, padx=5, pady=5)
+        self.progress_surah_label = ttk.Label(self.student_progress_entry_frame, text=": السورة")
+        self.progress_surah_label.pack(side=tk.RIGHT, padx=5, pady=5)
 
         self.progress_surah_entry = ttk.Entry(self.student_progress_entry_frame)
-        self.progress_surah_entry.pack(side=tk.LEFT, padx=5, pady=5)
+        self.progress_surah_entry.pack(side=tk.RIGHT, padx=5, pady=5)
 
-        self.progress_ayat_start_label = ttk.Label(self.student_progress_entry_frame, text="ayat start:")
-        self.progress_ayat_start_label.pack(side=tk.LEFT, padx=5, pady=5)
+        self.progress_ayat_start_label = ttk.Label(self.student_progress_entry_frame, text=": اية البدأ")
+        self.progress_ayat_start_label.pack(side=tk.RIGHT, padx=5, pady=5)
 
         self.progress_ayat_start_entry = ttk.Entry(self.student_progress_entry_frame)
-        self.progress_ayat_start_entry.pack(side=tk.LEFT, padx=5, pady=5)
+        self.progress_ayat_start_entry.pack(side=tk.RIGHT, padx=5, pady=5)
 
-        self.progress_ayat_end_label = ttk.Label(self.student_progress_entry_frame, text="ayat end:")
-        self.progress_ayat_end_label.pack(side=tk.LEFT, padx=5, pady=5)
+        self.progress_ayat_end_label = ttk.Label(self.student_progress_entry_frame, text=": اية الانتهاء")
+        self.progress_ayat_end_label.pack(side=tk.RIGHT, padx=5, pady=5)
 
         self.progress_ayat_end_entry = ttk.Entry(self.student_progress_entry_frame)
-        self.progress_ayat_end_entry.pack(side=tk.LEFT, padx=5, pady=5)
+        self.progress_ayat_end_entry.pack(side=tk.RIGHT, padx=5, pady=5)
 
     def delete_item(self):
         # Delete selected rows from the 'progress' table
@@ -62,6 +65,7 @@ class StudentProgressFrame(GeneralFrame):
             # If no item is selected, display an error message or handle it as needed
             # For simplicity, we print an error message to the console
             print("No item selected for deletion.")
+            messagebox.showinfo("Info", "اختر عنصرا اولا ")
             return
 
         for item in selected_items:
@@ -84,6 +88,7 @@ class StudentProgressFrame(GeneralFrame):
 
         # For simplicity, we print a message to the console
         print("Selected items deleted successfully.")
+        messagebox.showinfo("Info", "تم الحذف بنجاح ")
 
     def add_item(self):
         # Retrieve values from entry fields
@@ -99,6 +104,7 @@ class StudentProgressFrame(GeneralFrame):
             # Display an error message or handle the case where not all fields are filled
             # For simplicity, we print an error message to the console
             print("Please fill in all fields.")
+            messagebox.showinfo("Info", "برجاء ملئ جميع المدخلات")
             return
 
         # Insert the new student into the 'students' table
@@ -128,5 +134,6 @@ class StudentProgressFrame(GeneralFrame):
             row=list(row)
             print(row)
             self.student_progress_treeview.insert("", "end", values=row[1:])
+            
 
 
